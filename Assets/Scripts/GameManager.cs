@@ -31,20 +31,16 @@ public class GameManager : MonoBehaviour
     GameObject zombie;
 
     [SerializeField]
-    TextMeshProUGUI getOrderText;
-    [SerializeField]
-    TextMeshProUGUI deliverOrderText;
-    [SerializeField]
-    TextMeshProUGUI nightPrepText;
+    TextMeshProUGUI statusText;
     [SerializeField]
     Image nightTimeFilter;
-    [SerializeField]
-    TextMeshProUGUI zombiesRemainText;
-    [SerializeField]
-    TextMeshProUGUI sleepText;
 
-    float daytime = 60f;
-    float nighttime = 60f;
+    bool playerInteraction;
+
+    float daytimeLength = 10f;
+    float daytime;
+    float nighttimeLength = 10f;
+    float nighttime;
 
     int zombieCount = 0;
 
@@ -66,52 +62,18 @@ public class GameManager : MonoBehaviour
 
     private void Start() {
         gameState = GameState.GetOrder;
-        targetLocation = pizzaPlace.transform.position;
-        target.transform.position = pizzaPlace.transform.position;
-        target.SetActive(true);
+        daytime = daytimeLength;
+        SetTarget(pizzaPlace.transform.position);
     }
 
     void Update() {
+        daytime -= Time.deltaTime;
+        nighttime -= Time.deltaTime;
+
         camera.transform.position = player.transform.position + new Vector3(0, 0, -10);
         nearTarget = (new Vector2(player.transform.position.x, player.transform.position.y) - targetLocation).magnitude <= targetRadius;
 
-        switch (gameState) {
-            case GameState.GetOrder:
-                nightTimeFilter.enabled = false;
-                getOrderText.enabled = nearTarget;
-
-                if(daytime <= 0) {
-                    gameState = GameState.GetBack;
-                }
-
-                break;
-            case GameState.Deliver:
-                deliverOrderText.enabled = nearTarget;
-                break;
-            case GameState.GetBack:
-                nightPrepText.enabled = nearTarget;
-                break;
-            case GameState.NightPrep:
-                nightTimeFilter.enabled = true;
-                nighttime = 60f;
-                gameState = GameState.Night;
-                break;
-            case GameState.Night:
-                if (nighttime <= 0f) {
-                    gameState = GameState.NightGetBack;
-                }
-                break;
-            case GameState.NightGetBack:
-                if (zombieCount >= 1) {
-                    zombiesRemainText.enabled = nearTarget;
-                } else {
-                    sleepText.enabled = nearTarget;
-                }
-                break;
-        }
-
         Vector2 screenPos = camera.WorldToScreenPoint(target.transform.position);
-
         if ((screenPos.x < 0 || screenPos.y < 0 || screenPos.x > camera.pixelWidth || screenPos.y > camera.pixelHeight) && target.activeSelf) {
             targetLocationArrow.SetActive(true);
 
@@ -119,47 +81,125 @@ public class GameManager : MonoBehaviour
                                       , -player.transform.position.x + targetLocation.x);
 
             targetLocationArrow.transform.position = player.transform.position + 1.5f * new Vector3(Mathf.Cos(angle), Mathf.Sin(angle));
-
         } else {
             targetLocationArrow.SetActive(false);
         }
 
-        daytime -= Time.deltaTime;
-        nighttime -= Time.deltaTime;
+        switch (gameState) {
+            case GameState.GetOrder:
+                if (nearTarget) ShowText("Press 'E' to grab the order");
+                else HideText();
 
+                if (daytime <= 0) {
+                    gameState = GameState.GetBack;
+                }
+
+                if (playerInteraction && nearTarget) {
+                    HideText();
+
+                    targetHouse = Random.Range(0, houses.Count);
+                    SetTarget(houses[targetHouse].transform.position);
+
+                    gameState = GameState.Deliver;
+                }
+
+                break;
+
+            case GameState.Deliver:
+
+                if (nearTarget) ShowText("Press 'E' to deliver the order.");
+                else HideText();
+
+                if (playerInteraction && nearTarget) {
+                    HideText();
+                    SetTarget(pizzaPlace.transform.position);
+
+                    gameState = GameState.GetOrder;
+                }
+
+                break;
+
+            case GameState.GetBack:
+
+                if (nearTarget) ShowText("Press 'E' to prepare for the night.");
+                else HideText();
+
+                if (playerInteraction && nearTarget) {
+                    HideText();
+                    HideTarget();
+
+                    gameState = GameState.NightPrep;
+                }
+
+                break;
+
+            case GameState.NightPrep:
+
+                nightTimeFilter.enabled = true;
+                nighttime = nighttimeLength;
+                gameState = GameState.Night;
+                player.CanShoot(true);
+
+                break;
+
+            case GameState.Night:
+
+                if (nighttime <= 0f) {
+                    gameState = GameState.NightGetBack;
+                }
+
+                break;
+
+            case GameState.NightGetBack:
+
+                if (zombieCount == 0 && nearTarget) {
+                    ShowText("Press 'E' to go to sleep.");
+                }
+                else if (zombieCount == 0) {
+                    ShowText("I can head back now.");
+                    SetTarget(pizzaPlace.transform.position);
+                }
+
+                if (playerInteraction && nearTarget) {
+                    HideText();
+                    nightTimeFilter.enabled = false;
+                    daytime = daytimeLength;
+                    player.CanShoot(false);
+                    gameState = GameState.GetOrder;
+                }
+
+                break;
+        }
+
+        playerInteraction = false;
     }
 
     public void PlayerControllerUpdateFriction(float friction) {
         player.UpdateFriction(friction);
     }
 
-    public void PlayerInteract() {
-        if(gameState == GameState.GetOrder && nearTarget) {
-            gameState = GameState.Deliver;
-            getOrderText.enabled = false;
-            targetHouse = Random.Range(0, houses.Count);
-            targetLocation = houses[targetHouse].transform.position;
-            target.transform.position = targetLocation;
-            target.SetActive(true);
-        } else if(gameState == GameState.Deliver && nearTarget) {
-            gameState = GameState.GetOrder;
-            deliverOrderText.enabled = false;
-            targetLocation = pizzaPlace.transform.position;
-            target.transform.position = targetLocation;
-        } else if(gameState == GameState.GetBack && nearTarget) {
-            gameState = GameState.NightPrep;
-            nightPrepText.enabled = false;
-            target.SetActive(false);
-        } else if(gameState == GameState.NightGetBack && nearTarget && zombieCount == 0) {
-            sleepText.enabled = false;
-            targetLocation = pizzaPlace.transform.position;
-            target.transform.position = targetLocation;
-            target.SetActive(true);
-            daytime = 60f;
-            gameState = GameState.Deliver;
-        }
+    public void PlayerInteract(InputAction.CallbackContext context) {
+        if(context.action.IsPressed()) playerInteraction = true;
     }
 
+    private void ShowText(string text) {
+        statusText.text = text;
+        statusText.enabled = true;
+    }
+
+    private void HideText() {
+        statusText.enabled = false;
+    }
+
+    private void SetTarget(Vector3 location) {
+        targetLocation = location;
+        target.transform.position = targetLocation;
+        target.SetActive(true);
+    }
+
+    private void HideTarget() {
+        target.SetActive(false);
+    }
     private void SummonZombie() {
 
         GameObject z = Instantiate(zombie);

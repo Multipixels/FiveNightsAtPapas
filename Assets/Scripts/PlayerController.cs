@@ -11,14 +11,13 @@ public class PlayerController : MonoBehaviour
 {
 
     [SerializeField]
-    UnityEvent interact;
-
-    [SerializeField]
     GameObject bullet;
 
     bool isShooting = false;
 
     Rigidbody2D rb;
+
+    bool canShoot = false;
 
     float acceleration;
     float turn;
@@ -41,7 +40,7 @@ public class PlayerController : MonoBehaviour
             float val = context.ReadValue<float>();
             turn = -val;
         } else if (context.action.name == "Shoot") {
-            isShooting = context.action.IsPressed();
+            if( canShoot ) isShooting = context.action.IsPressed();
         } else if (context.action.name == "Interact") {
             
         } else {
@@ -64,13 +63,17 @@ public class PlayerController : MonoBehaviour
 
         float percentage = Mathf.Abs(rb.velocity.magnitude / (2 * rb.drag / rb.mass));
 
-        rb.MoveRotation(rb.rotation + Time.deltaTime * turn * turnSpeed * percentage);
+        rb.MoveRotation(rb.rotation + Time.deltaTime * turn * turnSpeed * percentage * acceleration);
 
         shootingCooldown -= Time.deltaTime;
     }
 
     public void UpdateFriction(float friction) {
         rb.drag = typicalDrag * (1 + friction);
+    }
+
+    public void CanShoot(bool canShoot) {
+        this.canShoot = canShoot;
     }
 
 }
