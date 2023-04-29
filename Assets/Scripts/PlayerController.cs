@@ -22,14 +22,21 @@ public class PlayerController : MonoBehaviour
     float acceleration;
     float turn;
     float turnSpeed = 120f;
-    float typicalDrag = 3f;
+    float typicalDrag;
 
-    [SerializeField]
-    float shootingInterval;
+    float shootingInterval = 0.75f;
     float shootingCooldown;
+
+    int health = 100;
+    int ammo = 6;
+
+    bool carUpgrade = false;
+    bool gunUpgrade = false;
 
     void Start() {
         rb = GetComponent<Rigidbody2D>();
+        typicalDrag = 5f;
+        rb.drag = typicalDrag;
     }
 
     public void Controls(InputAction.CallbackContext context) {
@@ -77,4 +84,30 @@ public class PlayerController : MonoBehaviour
         this.canShoot = canShoot;
     }
 
+    public int GetHealth() {
+        return health;
+    }
+
+    public void Heal() {
+        health = 100;
+    }
+
+    public void Damage() {
+        health -= 20;
+    }
+
+    public void Refill(int ammo) {
+        this.ammo = ammo;
+    }
+
+    public void UpgradeGun() {
+        gunUpgrade = true;
+        shootingInterval = 0.4f;
+    }
+
+    public void UpgradeCar() {
+        carUpgrade = true;
+        typicalDrag = 3f;
+        rb.drag = typicalDrag;
+    }
 }

@@ -37,6 +37,25 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     Image nightTimeFilter;
 
+    public TextMeshProUGUI pizzaDeliveredText;
+    public TextMeshProUGUI deliveryMoneyText;
+    public TextMeshProUGUI zombiesKilledText;
+    public TextMeshProUGUI lootingMoneyText;
+    public TextMeshProUGUI moneyTodayText;
+    public TextMeshProUGUI moneyNowText;
+    public TextMeshProUGUI dayText;
+    public TextMeshProUGUI healthText;
+    public TextMeshProUGUI ammoText;
+
+
+    public GameObject summaryUI;
+    public Button advertisingButton;
+    public Button carButton;
+    public Button gunButton;
+    public Button pizzaButton;
+    public Button healthButton;
+    public Button ammoButton;
+
     bool playerInteraction;
 
     float daytimeLength = 10f;
@@ -54,13 +73,30 @@ public class GameManager : MonoBehaviour
     int targetHouse;
     Vector2 targetLocation;
 
+    int dayNumber = 1;
+    int money = 0;
+    int ammo = 100;
+
+    bool advertisingUpgrade = false;
+    bool carUpgrade = false;
+    bool gunUpgrade = false;
+    bool pizzaUpgrade = false;
+
+    int todayPizzas = 0;
+    int todayPizzaMoney = 0;
+    int todayZombies = 0;
+    int todayZombiesMoney = 0;
+
+    bool proceedButton = false;
+
     enum GameState {
         GetOrder,
         Deliver,
         GetBack,
         NightPrep,
         Night,
-        NightGetBack
+        NightGetBack, 
+        Summary
     }
 
     GameState gameState;
@@ -120,6 +156,8 @@ public class GameManager : MonoBehaviour
                     HideText();
                     SetTarget(pizzaPlace.transform.position);
 
+                    todayPizzas += 1;
+                    todayPizzaMoney += Random.Range(1, 3);
                     gameState = GameState.GetOrder;
                 }
 
@@ -155,7 +193,7 @@ public class GameManager : MonoBehaviour
                     gameState = GameState.NightGetBack;
                 }
 
-                if(zombieSpawnTimer <= 0f) {
+                if (zombieSpawnTimer <= 0f) {
                     zombieSpawnTimer = zombieSpawnInterval;
                     SummonZombie();
                 }
@@ -166,8 +204,7 @@ public class GameManager : MonoBehaviour
 
                 if (zombieCount == 0 && nearTarget) {
                     ShowText("Press 'E' to go to sleep.");
-                }
-                else if (zombieCount == 0) {
+                } else if (zombieCount == 0) {
                     ShowText("I can head back now.");
                     SetTarget(pizzaPlace.transform.position);
                 }
@@ -175,15 +212,37 @@ public class GameManager : MonoBehaviour
                 if (playerInteraction && nearTarget) {
                     HideText();
                     nightTimeFilter.enabled = false;
-                    daytime = daytimeLength;
                     player.CanShoot(false);
+                    gameState = GameState.Summary;
+                    Time.timeScale = 0f;
+
+                    money += todayPizzaMoney;
+                    money += todayZombiesMoney;
+                    OpenShopMenu();
+                }
+
+                break;
+
+            case GameState.Summary:
+
+                if (proceedButton) {
+                    proceedButton = false;
+                    summaryUI.SetActive(false);
+                    todayPizzaMoney = 0;
+                    todayPizzas = 0;
+                    todayZombies = 0;
+                    todayZombiesMoney = 0;
+                    daytime = daytimeLength;
+                    dayNumber += 1;
                     gameState = GameState.GetOrder;
+                    Time.timeScale = 1f;
                 }
 
                 break;
         }
 
         playerInteraction = false;
+        
     }
 
     public void PlayerControllerUpdateFriction(float friction) {
@@ -217,13 +276,77 @@ public class GameManager : MonoBehaviour
         int zombieIndex = Random.Range(0, zombieSpawns.Count);
         Vector2 zombieLocation = (zombieSpawns[zombieIndex].transform.position);
 
+        Vector2 screenPos = camera.WorldToScreenPoint(zombieLocation);
+        while (!(screenPos.x < 0 || screenPos.y < 0 || screenPos.x > camera.pixelWidth || screenPos.y > camera.pixelHeight)) {
+            zombieIndex = Random.Range(0, zombieSpawns.Count);
+            zombieLocation = (zombieSpawns[zombieIndex].transform.position);
+
+            screenPos = camera.WorldToScreenPoint(zombieLocation);
+        }
+        
+
         GameObject z = Instantiate(zombie);
-        z.GetComponent<Zombie>().Init(player.transform, this);
+        z.GetComponent<Zombie>().Init(player.transform, this, dayNumber);
         z.transform.position = zombieLocation;
         zombieCount += 1;
     }
 
-    public void ZombieDeath() {
+    public void ZombieDeath(bool proper) {
         zombieCount -= 1;
+        if (proper) todayZombies++;
+        if (proper) todayZombiesMoney += Random.Range(1, 2);
+    }
+
+    public void BuyUpgrade(int up) {
+        if (up == 0) {
+            advertisingUpgrade = true;
+        } else if (up == 1) {
+            carUpgrade = true;
+            player.UpgradeCar();
+        } else if (up == 2) {
+            gunUpgrade = true;
+            player.UpgradeGun();
+        } else if (up == 3) {
+            pizzaUpgrade = true;
+        }
+
+        money -= 10;
+        OpenShopMenu();
+    }
+
+    public void BuyHealth() {
+        player.Heal();
+        money -= 2;
+    }
+
+    public void BuyAmmo() {
+        ammo = 100;
+        money -= 2;
+    }
+
+    public void NewDay() {
+        proceedButton = true;
+    }
+
+    private void OpenShopMenu() {
+        summaryUI.SetActive(true);
+
+        advertisingButton.interactable = money >= 10;
+        carButton.interactable = money >= 10;
+        gunButton.interactable = money >= 10;
+        pizzaButton.interactable = money >= 10;
+        healthButton.interactable = money >= 2 && player.GetHealth() != 100;
+        ammoButton.interactable = money >= 2 && ammo != 100;
+
+        dayText.text = $"Day {dayNumber}";
+        pizzaDeliveredText.text = $"Pizzas Delivered: {todayPizzas}";
+        deliveryMoneyText.text = $"Money from Deliveries: {todayPizzaMoney}";
+        zombiesKilledText.text = $"Zombies Killed: {todayZombies}";
+        lootingMoneyText.text = $"Money from Looting: {todayZombiesMoney}";
+        moneyTodayText.text = $"Earned Today: {todayPizzaMoney + todayZombiesMoney}";
+        moneyNowText.text = $"${money}";
+        healthText.text = $"Health: {player.GetHealth()}/100";
+        ammoText.text = $"Ammo: {ammo}/100";
+
     }
 }

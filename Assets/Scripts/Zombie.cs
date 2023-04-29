@@ -10,7 +10,7 @@ public class Zombie : MonoBehaviour
     public Transform player;
 
     private State state;
-    private int health = 5;
+    private int health = 2;
 
     [SerializeField]
     GameManager gm;
@@ -20,7 +20,7 @@ public class Zombie : MonoBehaviour
         Active
     }
 
-    public void Init(Transform playerTarget, GameManager gm) {
+    public void Init(Transform playerTarget, GameManager gm, int day) {
         player = playerTarget;
         this.gm = gm;
         state = State.Active;
@@ -47,12 +47,13 @@ public class Zombie : MonoBehaviour
         if(other.gameObject.tag == "Bullet") {
             health -= 1;
         } else if(other.gameObject.tag == "Player") {
-            gm.ZombieDeath();
+            gm.ZombieDeath(false);
+            other.gameObject.GetComponent<PlayerController>().Damage();
             Destroy(gameObject);
         }
 
         if(health <= 0) {
-            gm.ZombieDeath();
+            gm.ZombieDeath(true);
             Destroy(gameObject);
         }
     }
