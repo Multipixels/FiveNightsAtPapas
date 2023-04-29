@@ -21,8 +21,8 @@ public class PlayerController : MonoBehaviour
 
     float acceleration;
     float turn;
-    float turnSpeed = 180f;
-    float typicalDrag = 4f;
+    float turnSpeed = 120f;
+    float typicalDrag = 3f;
 
     [SerializeField]
     float shootingInterval;
@@ -40,7 +40,8 @@ public class PlayerController : MonoBehaviour
             float val = context.ReadValue<float>();
             turn = -val;
         } else if (context.action.name == "Shoot") {
-            if( canShoot ) isShooting = context.action.IsPressed();
+            if (canShoot) isShooting = context.action.IsPressed();
+            else isShooting = false;
         } else if (context.action.name == "Interact") {
             
         } else {

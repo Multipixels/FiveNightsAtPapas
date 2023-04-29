@@ -29,6 +29,8 @@ public class GameManager : MonoBehaviour
     GameObject targetLocationArrow;
     [SerializeField]
     GameObject zombie;
+    [SerializeField]
+    List<GameObject> zombieSpawns;
 
     [SerializeField]
     TextMeshProUGUI statusText;
@@ -41,6 +43,9 @@ public class GameManager : MonoBehaviour
     float daytime;
     float nighttimeLength = 10f;
     float nighttime;
+
+    float zombieSpawnInterval = 2f;
+    float zombieSpawnTimer;
 
     int zombieCount = 0;
 
@@ -69,6 +74,7 @@ public class GameManager : MonoBehaviour
     void Update() {
         daytime -= Time.deltaTime;
         nighttime -= Time.deltaTime;
+        zombieSpawnTimer -= Time.deltaTime;
 
         camera.transform.position = player.transform.position + new Vector3(0, 0, -10);
         nearTarget = (new Vector2(player.transform.position.x, player.transform.position.y) - targetLocation).magnitude <= targetRadius;
@@ -137,6 +143,7 @@ public class GameManager : MonoBehaviour
 
                 nightTimeFilter.enabled = true;
                 nighttime = nighttimeLength;
+                zombieSpawnTimer = zombieSpawnInterval;
                 gameState = GameState.Night;
                 player.CanShoot(true);
 
@@ -146,6 +153,11 @@ public class GameManager : MonoBehaviour
 
                 if (nighttime <= 0f) {
                     gameState = GameState.NightGetBack;
+                }
+
+                if(zombieSpawnTimer <= 0f) {
+                    zombieSpawnTimer = zombieSpawnInterval;
+                    SummonZombie();
                 }
 
                 break;
@@ -202,12 +214,16 @@ public class GameManager : MonoBehaviour
     }
     private void SummonZombie() {
 
-        GameObject z = Instantiate(zombie);
-        z.GetComponent<Zombie>().player = player.transform;
+        int zombieIndex = Random.Range(0, zombieSpawns.Count);
+        Vector2 zombieLocation = (zombieSpawns[zombieIndex].transform.position);
 
+        GameObject z = Instantiate(zombie);
+        z.GetComponent<Zombie>().Init(player.transform, this);
+        z.transform.position = zombieLocation;
+        zombieCount += 1;
     }
 
     public void ZombieDeath() {
-        Debug.Log("zombie died");
+        zombieCount -= 1;
     }
 }

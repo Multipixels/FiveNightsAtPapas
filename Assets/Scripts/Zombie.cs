@@ -20,7 +20,7 @@ public class Zombie : MonoBehaviour
         Active
     }
 
-    void Init(Transform playerTarget, GameManager gm) {
+    public void Init(Transform playerTarget, GameManager gm) {
         player = playerTarget;
         this.gm = gm;
         state = State.Active;

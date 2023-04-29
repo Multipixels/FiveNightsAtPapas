@@ -15,10 +15,10 @@ public class Friction : MonoBehaviour
     UnityEvent<float> exitTrigger;
 
     void OnTriggerEnter2D(Collider2D other) {
-        enterTrigger.Invoke(frictionValue);
+        if(other.tag == "Player") enterTrigger.Invoke(frictionValue);
     }
 
     private void OnTriggerExit2D(Collider2D other) {
-        exitTrigger.Invoke(0);
+        if (other.tag == "Player") exitTrigger.Invoke(0);
     }
 }
