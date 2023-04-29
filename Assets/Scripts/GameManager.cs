@@ -21,6 +21,10 @@ public class GameManager : MonoBehaviour
     GameObject pizzaPlace;
     [SerializeField]
     List<GameObject> houses;
+    [SerializeField]
+    GameObject target;
+    [SerializeField]
+    GameObject targetLocationArrow;
 
     [SerializeField]
     TextMeshProUGUI getOrderText;
@@ -40,6 +44,9 @@ public class GameManager : MonoBehaviour
 
     private void Start() {
         gameState = GameState.GetOrder;
+        targetLocation = pizzaPlace.transform.position;
+        target.transform.position = pizzaPlace.transform.position;
+        target.SetActive(true);
     }
 
     // Update is called once per frame
@@ -59,8 +66,22 @@ public class GameManager : MonoBehaviour
 
                 break;
         }
-    
-    
+
+        Vector2 screenPos = camera.WorldToScreenPoint(target.transform.position);
+
+        if (screenPos.x < 0 || screenPos.y < 0 || screenPos.x > camera.pixelWidth || screenPos.y > camera.pixelHeight) {
+            targetLocationArrow.SetActive(true);
+
+            float angle = -Mathf.Atan2(player.transform.position.y - targetLocation.y
+                                      , -player.transform.position.x + targetLocation.x);
+
+            targetLocationArrow.transform.position = player.transform.position + 1.5f * new Vector3(Mathf.Cos(angle), Mathf.Sin(angle));
+
+        } else {
+            targetLocationArrow.SetActive(false);
+        }
+
+
     }
 
     public void PlayerControllerUpdateFriction(float friction) {
@@ -73,9 +94,13 @@ public class GameManager : MonoBehaviour
             getOrderText.enabled = false;
             targetHouse = Random.Range(0, houses.Count);
             targetLocation = houses[targetHouse].transform.position;
+            target.transform.position = targetLocation;
+            target.SetActive(true);
         } else if(gameState == GameState.Deliver && nearTarget) {
             gameState = GameState.GetOrder;
             deliverOrderText.enabled = false;
+            targetLocation = pizzaPlace.transform.position;
+            target.transform.position = targetLocation;
         }
     }
 }
