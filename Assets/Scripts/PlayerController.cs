@@ -13,12 +13,21 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     UnityEvent interact;
 
+    [SerializeField]
+    GameObject bullet;
+
+    bool isShooting = false;
+
     Rigidbody2D rb;
 
     float acceleration;
     float turn;
     float turnSpeed = 180f;
     float typicalDrag = 4f;
+
+    [SerializeField]
+    float shootingInterval;
+    float shootingCooldown;
 
     void Start() {
         rb = GetComponent<Rigidbody2D>();
@@ -31,6 +40,8 @@ public class PlayerController : MonoBehaviour
         } else if (context.action.name == "Turn") {
             float val = context.ReadValue<float>();
             turn = -val;
+        } else if (context.action.name == "Shoot") {
+            isShooting = context.action.IsPressed();
         } else if (context.action.name == "Interact") {
             
         } else {
@@ -38,13 +49,24 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
+    private void Update() {
+        if (isShooting && shootingCooldown <= 0f) {
+            GameObject bObj = Instantiate(bullet);
+            Vector2 worldPosition = Camera.main.ScreenToWorldPoint((Vector3)Mouse.current.position.ReadValue()) - transform.position;
+            bObj.transform.position = transform.position;
+            bObj.GetComponent<Bullet>().Init(worldPosition.normalized);
+            shootingCooldown = shootingInterval;
+        }
+    }
+
     void FixedUpdate() {
         rb.AddForce(transform.up * acceleration, ForceMode2D.Impulse);
 
         float percentage = Mathf.Abs(rb.velocity.magnitude / (2 * rb.drag / rb.mass));
 
         rb.MoveRotation(rb.rotation + Time.deltaTime * turn * turnSpeed * percentage);
+
+        shootingCooldown -= Time.deltaTime;
     }
 
     public void UpdateFriction(float friction) {
