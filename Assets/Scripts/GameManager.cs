@@ -40,6 +40,16 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     Image nightTimeFilter;
 
+    /////////////////////////////////////
+
+    public GameObject summaryUI;
+    public Button advertisingButton;
+    public Button carButton;
+    public Button gunButton;
+    public Button pizzaButton;
+    public Button healthButton;
+    public Button ammoButton;
+
     public TextMeshProUGUI pizzaDeliveredText;
     public TextMeshProUGUI deliveryMoneyText;
     public TextMeshProUGUI zombiesKilledText;
@@ -50,17 +60,24 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI healthText;
     public TextMeshProUGUI ammoText;
 
+    /////////////////////////////////////
+
+    public GameObject winUI;
+
+    public TextMeshProUGUI winPizzaDeliveredText;
+    public TextMeshProUGUI winDeliveryMoneyText;
+    public TextMeshProUGUI winZombiesKilledText;
+    public TextMeshProUGUI winLootingMoneyText;
+    public TextMeshProUGUI winMoneyText;
+    public TextMeshProUGUI winMoneyNowText;
+
+    /////////////////////////////////////
+
     public TextMeshProUGUI healthActiveText;
     public TextMeshProUGUI ammoActiveText;
     public TextMeshProUGUI parlorAmmoText;
 
-    public GameObject summaryUI;
-    public Button advertisingButton;
-    public Button carButton;
-    public Button gunButton;
-    public Button pizzaButton;
-    public Button healthButton;
-    public Button ammoButton;
+    /////////////////////////////////////
 
     public GameObject preRoads;
     public GameObject upgradedRoads;
@@ -68,6 +85,8 @@ public class GameManager : MonoBehaviour
     public GameObject upgradedGrass;
     public GameObject preNavMesh;
     public GameObject upgradedNavMesh;
+
+    /////////////////////////////////////
 
     bool playerInteraction;
 
@@ -99,6 +118,12 @@ public class GameManager : MonoBehaviour
     int todayPizzaMoney = 0;
     int todayZombies = 0;
     int todayZombiesMoney = 0;
+
+    int totalPizzas = 0;
+    int totalPizzaMoney = 0;
+    int totalZombies = 0;
+    int totalZombiesMoney = 0;
+    int totalMoney = 0;
 
     bool proceedButton = false;
 
@@ -258,13 +283,16 @@ public class GameManager : MonoBehaviour
                 } else if (zombieCount == 0) {
                     ShowText("I can head back now.");
                     SetTarget(pizzaPlace.transform.position);
-                }
-
-                if (nearTarget) {
+                } else if (nearTarget) {
                     parlorAmmoText.enabled = true;
                     parlorAmmoText.text = $"Ammo Storage: {ammo}";
+
+                    if ((ammo != 6 && !gunUpgrade) || (ammo != 18)) {
+                        ShowText("Press 'E' to refill ammo.");
+                    }
                 } else {
                     parlorAmmoText.enabled = false;
+                    HideText();
                 }
 
                 if (playerInteraction && nearTarget && zombieCount == 0) {
@@ -280,12 +308,19 @@ public class GameManager : MonoBehaviour
 
                     money += todayPizzaMoney;
                     money += todayZombiesMoney;
-                    OpenShopMenu();
-                } else if (playerInteraction && nearTarget) {
-                    if ((ammo != 6 && !gunUpgrade) || (ammo != 18)) {
-                        ShowText("Press 'E' to refill ammo.");
-                    }
 
+                    totalMoney += money;
+                    totalPizzaMoney += todayPizzaMoney;
+                    totalZombiesMoney += todayZombiesMoney;
+                    totalZombies += todayZombies;
+                    totalPizzas += todayPizzas;
+
+                    if(dayNumber != 5) {
+                        OpenShopMenu();
+                    } else {
+                        OpenWinMenu();
+                    }
+                } else if (playerInteraction && nearTarget) {
                     if (gunUpgrade) {
                         ammo -= (18 - player.GetAmmo());
                         player.Refill(18);
@@ -432,6 +467,29 @@ public class GameManager : MonoBehaviour
         moneyNowText.text = $"${money}";
         healthText.text = $"Health: {player.GetHealth()}/100";
         ammoText.text = $"Ammo: {ammo}/100";
+
+    }
+    
+    private void OpenWinMenu() {
+        winUI.SetActive(true);
+
+        winPizzaDeliveredText.text = $"Total Pizzas Delivered: {totalPizzas}";
+        winDeliveryMoneyText.text = $"Total Money from Deliveries: ${totalPizzaMoney}";
+        winZombiesKilledText.text = $"Total Zombies Killed: {totalZombies}";
+        winLootingMoneyText.text = $"Total Money from Looting: ${totalZombiesMoney}";
+        winMoneyText.text = $"Total Earned\n${totalMoney}";
+        winMoneyNowText.text = $"Money Remaining\n${money}";
+    }
+
+    public void RestartGame() {
+
+    }
+
+    public void RestartDay() {
+
+    }
+
+    public void ToMainMenu() {
 
     }
 }
