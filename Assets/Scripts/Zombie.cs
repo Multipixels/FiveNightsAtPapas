@@ -6,6 +6,10 @@ using UnityEngine.Events;
 
 public class Zombie : MonoBehaviour
 {
+
+    AudioSource audioSource;
+    public AudioClip hurt;
+
     public NavMeshAgent agent;
     public Transform player;
 
@@ -27,6 +31,7 @@ public class Zombie : MonoBehaviour
         state = State.Active;
         health = 1 + day;
         agent.speed = 3.0f + day * 0.5f;
+        audioSource = gameObject.GetComponent<AudioSource>();
     }
 
     void Start() {
@@ -59,6 +64,8 @@ public class Zombie : MonoBehaviour
             gm.ZombieDeath(true);
             Destroy(gameObject);
         }
+
+        audioSource.PlayOneShot(hurt);
     }
 }
 

@@ -4,11 +4,18 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public AudioClip death;
+    public AudioClip zombieDeath;
+    public AudioClip pickupPizza;
+    public AudioClip dropOffPizza;
+  
+
+    public AudioSource audioSource;
 
     [SerializeField]
     float pizzaRadius;
@@ -73,6 +80,19 @@ public class GameManager : MonoBehaviour
 
     /////////////////////////////////////
 
+    public GameObject deathUI;
+
+    /////////////////////////////////////
+
+    public GameObject pauseUI;
+    public GameObject pauseButton;
+
+    /////////////////////////////////////
+
+    public GameObject startMenu;
+
+    /////////////////////////////////////
+
     public TextMeshProUGUI healthActiveText;
     public TextMeshProUGUI ammoActiveText;
     public TextMeshProUGUI parlorAmmoText;
@@ -92,10 +112,10 @@ public class GameManager : MonoBehaviour
 
     float daytimeLength = 10f;
     float daytime;
-    float nighttimeLength = 10f;
+    float nighttimeLength = 60f;
     float nighttime;
 
-    float zombieSpawnInterval = 2f;
+    float zombieSpawnInterval = 3f;
     float zombieSpawnTimer;
 
     int zombieCount = 0;
@@ -125,9 +145,13 @@ public class GameManager : MonoBehaviour
     int totalZombiesMoney = 0;
     int totalMoney = 0;
 
+    float volume = 0.5f;
+
     bool proceedButton = false;
+    bool dead = false;
 
     enum GameState {
+        Menu,
         GetOrder,
         Deliver,
         GetBack,
@@ -140,12 +164,19 @@ public class GameManager : MonoBehaviour
     GameState gameState;
 
     private void Start() {
-        gameState = GameState.GetOrder;
+        dead = false;
+        gameState = GameState.Menu;
         daytime = daytimeLength;
         SetTarget(pizzaPlace.transform.position);
+        Time.timeScale = 0;
+        pauseButton.SetActive(false);
+        startMenu.SetActive(true);
     }
 
     void Update() {
+
+        AudioListener.volume = volume;
+
         daytime -= Time.deltaTime;
         nighttime -= Time.deltaTime;
         zombieSpawnTimer -= Time.deltaTime;
@@ -167,6 +198,10 @@ public class GameManager : MonoBehaviour
         }
 
         switch (gameState) {
+
+            case GameState.Menu:
+                break;
+
             case GameState.GetOrder:
                 if (nearTarget) ShowText("Press 'E' to grab the order");
                 else HideText();
@@ -180,6 +215,8 @@ public class GameManager : MonoBehaviour
 
                     targetHouse = Random.Range(0, houses.Count);
                     SetTarget(houses[targetHouse].transform.position);
+
+                    audioSource.PlayOneShot(pickupPizza);
 
                     gameState = GameState.Deliver;
                 }
@@ -195,8 +232,10 @@ public class GameManager : MonoBehaviour
                     HideText();
                     SetTarget(pizzaPlace.transform.position);
 
+                    audioSource.PlayOneShot(dropOffPizza);
+
                     todayPizzas += 1;
-                    todayPizzaMoney += Random.Range(1, 3);
+                    todayPizzaMoney += Random.Range(3, 5);
                     gameState = GameState.GetOrder;
                 }
 
@@ -251,12 +290,18 @@ public class GameManager : MonoBehaviour
                     parlorAmmoText.enabled = true;
                     parlorAmmoText.text = $"Ammo Storage: {ammo}";
 
-                    if ((ammo != 6 && !gunUpgrade) || (ammo != 18)) {
+                    if ((player.GetAmmo() != 6 && !gunUpgrade) || (gunUpgrade && player.GetAmmo() != 18)) {
                         ShowText("Press 'E' to refill ammo.");
+                    } else {
+                        HideText();
                     }
                 } else {
                     parlorAmmoText.enabled = false;
-                    HideText();
+                    if (player.GetAmmo() == 0) {
+                        ShowText("Refill ammo at the pizza place!");
+                    } else {
+                        HideText();
+                    }
                 }
 
                 if (playerInteraction && nearTarget) {
@@ -287,12 +332,18 @@ public class GameManager : MonoBehaviour
                     parlorAmmoText.enabled = true;
                     parlorAmmoText.text = $"Ammo Storage: {ammo}";
 
-                    if ((ammo != 6 && !gunUpgrade) || (ammo != 18)) {
+                    if ((player.GetAmmo() != 6 && !gunUpgrade) || (gunUpgrade && player.GetAmmo() != 18)) {
                         ShowText("Press 'E' to refill ammo.");
+                    } else {
+                        HideText();
                     }
                 } else {
                     parlorAmmoText.enabled = false;
-                    HideText();
+                    if (player.GetAmmo() == 0) {
+                        ShowText("Refill ammo at the pizza place!");
+                    } else {
+                        HideText();
+                    }
                 }
 
                 if (playerInteraction && nearTarget && zombieCount == 0) {
@@ -352,6 +403,12 @@ public class GameManager : MonoBehaviour
                 break;
         }
 
+        if (player.GetHealth() <= 0 && !dead) {
+            PlayerDeath();
+            dead = true;
+
+        }
+
         playerInteraction = false;
         
     }
@@ -361,7 +418,7 @@ public class GameManager : MonoBehaviour
     }
 
     public void PlayerInteract(InputAction.CallbackContext context) {
-        if(context.action.IsPressed()) playerInteraction = true;
+        if (context.action.IsPressed() && Time.timeScale != 0f) playerInteraction = true;
     }
 
     private void ShowText(string text) {
@@ -406,7 +463,8 @@ public class GameManager : MonoBehaviour
     public void ZombieDeath(bool proper) {
         zombieCount -= 1;
         if (proper) todayZombies++;
-        if (proper) todayZombiesMoney += Random.Range(1, 2);
+        if (proper) todayZombiesMoney ++;
+        if (proper) audioSource.PlayOneShot(zombieDeath);
     }
 
     public void BuyUpgrade(int up) {
@@ -428,19 +486,22 @@ public class GameManager : MonoBehaviour
             upgradedNavMesh.SetActive(true);
         }
 
-        money -= 10;
+        money -= 50;
         OpenShopMenu();
     }
 
     public void BuyHealth() {
         player.Heal();
-        money -= 2;
+        money -= 5;
         OpenShopMenu();
     }
 
     public void BuyAmmo() {
-        ammo = 100;
-        money -= 2;
+        ammo += 50;
+        if(ammo >= 150) {
+            ammo = 150;
+        }
+        money -= 5;
         OpenShopMenu();
     }
 
@@ -451,12 +512,12 @@ public class GameManager : MonoBehaviour
     private void OpenShopMenu() {
         summaryUI.SetActive(true);
 
-        advertisingButton.interactable = money >= 10;
-        carButton.interactable = money >= 10;
-        gunButton.interactable = money >= 10;
-        pizzaButton.interactable = money >= 10;
-        healthButton.interactable = money >= 2 && player.GetHealth() != 100;
-        ammoButton.interactable = money >= 2 && ammo != 100;
+        advertisingButton.interactable = money >= 50;
+        carButton.interactable = money >= 50;
+        gunButton.interactable = money >= 50;
+        pizzaButton.interactable = money >= 50;
+        healthButton.interactable = money >= 5 && player.GetHealth() != 100;
+        ammoButton.interactable = money >= 5 && ammo != 150;
 
         dayText.text = $"Day {dayNumber}";
         pizzaDeliveredText.text = $"Pizzas Delivered: {todayPizzas}";
@@ -466,7 +527,7 @@ public class GameManager : MonoBehaviour
         moneyTodayText.text = $"Earned Today: {todayPizzaMoney + todayZombiesMoney}";
         moneyNowText.text = $"${money}";
         healthText.text = $"Health: {player.GetHealth()}/100";
-        ammoText.text = $"Ammo: {ammo}/100";
+        ammoText.text = $"Ammo: {ammo}/150";
 
     }
     
@@ -482,7 +543,8 @@ public class GameManager : MonoBehaviour
     }
 
     public void RestartGame() {
-
+        SceneManager.LoadScene("GameScene");
+        Time.timeScale = 1.0f;
     }
 
     public void RestartDay() {
@@ -490,6 +552,53 @@ public class GameManager : MonoBehaviour
     }
 
     public void ToMainMenu() {
+
+    }
+
+    public void StartGame() {
+        Time.timeScale = 1;
+        gameState = GameState.GetOrder;
+        pauseButton.SetActive(true);
+        startMenu.SetActive(false);
+    }
+
+    public void PlayerDeath() {
+        audioSource.PlayOneShot(death);
+
+        Time.timeScale = 0f;
+        deathUI.SetActive(true);
+    }
+
+    public void TogglePause(InputAction.CallbackContext context) {
+        if(!context.action.IsPressed()) return;
+
+        if (gameState == GameState.Summary || gameState == GameState.Menu) return;
+
+        if (Time.timeScale != 0) {
+            Time.timeScale = 0f;
+            pauseUI.SetActive(true);
+
+        } else {
+            Time.timeScale = 1f;
+            pauseUI.SetActive(false);
+        }
+
+    }
+
+    public void TogglePause() {
+
+        if (gameState == GameState.Summary || gameState == GameState.Menu) return;
+
+        if (Time.timeScale != 0) {
+            Time.timeScale = 0f;
+            pauseUI.SetActive(true);
+            pauseButton.SetActive(false);
+        
+        } else {
+            Time.timeScale = 1f;
+            pauseUI.SetActive(false);
+            pauseButton.SetActive(true);
+        }
 
     }
 }

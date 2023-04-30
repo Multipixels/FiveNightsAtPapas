@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using Unity.VisualScripting;
-using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
@@ -12,6 +12,14 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField]
     GameObject bullet;
+
+    public GameObject pauseButton;
+
+    AudioSource audioSource;
+    public AudioClip shoot;
+    public AudioClip hurt;
+    public AudioClip shootFail;
+    public AudioClip reload;
 
     bool isShooting = false;
 
@@ -37,6 +45,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         typicalDrag = 5f;
         rb.drag = typicalDrag;
+        audioSource = GetComponent<AudioSource>();
     }
 
     public void Controls(InputAction.CallbackContext context) {
@@ -57,14 +66,32 @@ public class PlayerController : MonoBehaviour
     }
 
     private void Update() {
-        if (isShooting && shootingCooldown <= 0f && ammo > 0) {
+        if (isShooting && shootingCooldown <= 0f && ammo > 0 && Time.deltaTime != 0 && !isPlayerHoveringPause()) {
             GameObject bObj = Instantiate(bullet);
             Vector2 worldPosition = Camera.main.ScreenToWorldPoint((Vector3)Mouse.current.position.ReadValue()) - transform.position;
             bObj.transform.position = transform.position;
             bObj.GetComponent<Bullet>().Init(worldPosition.normalized);
             shootingCooldown = shootingInterval;
             ammo--;
+            audioSource.PlayOneShot(shoot);
+        } else if (isShooting && shootingCooldown <= 0f && ammo == 0 && Time.deltaTime != 0 && !isPlayerHoveringPause()) {
+            audioSource.PlayOneShot(shootFail);
+            shootingCooldown = shootingInterval;
         }
+    }
+
+    private bool isPlayerHoveringPause() {
+        PointerEventData pointerEventData = new PointerEventData(EventSystem.current);
+        pointerEventData.position = Mouse.current.position.ReadValue();
+
+        List<RaycastResult> raycastResultList = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerEventData, raycastResultList);
+
+        for(int i = 0; i < raycastResultList.Count; i++) {
+            if (raycastResultList[i].gameObject.name == "PauseButton") return true;
+        }
+
+        return false;
     }
 
     void FixedUpdate() {
@@ -99,10 +126,14 @@ public class PlayerController : MonoBehaviour
 
     public void Damage() {
         health -= 20;
+        if (health >= 0) audioSource.PlayOneShot(hurt);
     }
 
     public void Refill(int ammo) {
-        this.ammo = ammo;
+        if (ammo != this.ammo) {
+            audioSource.PlayOneShot(reload);
+            this.ammo = ammo;
+        }
     }
 
     public void UpgradeGun() {
