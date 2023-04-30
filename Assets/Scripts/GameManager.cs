@@ -60,6 +60,13 @@ public class GameManager : MonoBehaviour
     public Button healthButton;
     public Button ammoButton;
 
+    public GameObject preRoads;
+    public GameObject upgradedRoads;
+    public GameObject preGrass;
+    public GameObject upgradedGrass;
+    public GameObject preNavMesh;
+    public GameObject upgradedNavMesh;
+
     bool playerInteraction;
 
     float daytimeLength = 10f;
@@ -375,6 +382,12 @@ public class GameManager : MonoBehaviour
             player.UpgradeGun();
         } else if (up == 3) {
             pizzaUpgrade = true;
+            preRoads.SetActive(false);
+            preGrass.SetActive(false);
+            preNavMesh.SetActive(false);
+            upgradedGrass.SetActive(true);
+            upgradedRoads.SetActive(true);
+            upgradedNavMesh.SetActive(true);
         }
 
         money -= 10;
