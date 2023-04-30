@@ -25,6 +25,8 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     List<GameObject> houses;
     [SerializeField]
+    List<GameObject> bigHouses;
+    [SerializeField]
     GameObject target;
     [SerializeField]
     GameObject targetLocationArrow;
@@ -134,6 +136,7 @@ public class GameManager : MonoBehaviour
                                       , -player.transform.position.x + targetLocation.x);
 
             targetLocationArrow.transform.position = player.transform.position + 1.5f * new Vector3(Mathf.Cos(angle), Mathf.Sin(angle));
+            targetLocationArrow.transform.rotation = Quaternion.Euler(0, 0, angle / Mathf.PI * 180 - 90);
         } else {
             targetLocationArrow.SetActive(false);
         }
@@ -337,7 +340,7 @@ public class GameManager : MonoBehaviour
 
     private void SetTarget(Vector3 location) {
         targetLocation = location;
-        target.transform.position = targetLocation;
+        target.transform.position = targetLocation + new Vector2(0, 3);
         target.SetActive(true);
     }
 
@@ -359,8 +362,8 @@ public class GameManager : MonoBehaviour
         
         GameObject z = Instantiate(zombie);
 
-        if(gunUpgrade) z.GetComponent<Zombie>().Init(player.transform, this, (dayNumber-1)/2);
-        else z.GetComponent<Zombie>().Init(player.transform, this, dayNumber);
+        if(gunUpgrade) z.transform.Find("Sprite").GetComponent<Zombie>().Init(player.transform, this, (dayNumber-1)/2);
+        else z.transform.Find("Sprite").GetComponent<Zombie>().Init(player.transform, this, dayNumber);
         z.transform.position = zombieLocation;
         zombieCount += 1;
     }

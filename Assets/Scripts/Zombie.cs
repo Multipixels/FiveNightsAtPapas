@@ -30,8 +30,8 @@ public class Zombie : MonoBehaviour
     }
 
     void Start() {
-        agent.updateRotation = false;
-        agent.updateUpAxis = false;
+        //agent.updateRotation = false;
+        //agent.updateUpAxis = false;
         agent.isStopped = true;
 
         state = State.Active;
