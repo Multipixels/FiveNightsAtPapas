@@ -146,4 +146,12 @@ public class PlayerController : MonoBehaviour
         typicalDrag = 3f;
         rb.drag = typicalDrag;
     }
+
+    public void SetAmmo(int ammo) {
+        this.ammo = ammo;
+    }
+
+    public void SetHealth(int health) {
+        this.health = health;
+    }
 }

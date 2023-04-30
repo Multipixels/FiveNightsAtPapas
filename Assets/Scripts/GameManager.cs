@@ -145,6 +145,14 @@ public class GameManager : MonoBehaviour
     int totalZombiesMoney = 0;
     int totalMoney = 0;
 
+    Vector3 startDayPosition;
+    Quaternion startDayRotation;
+    Rigidbody startPlayerRb;
+    int startPlayerHealth;
+    int startPlayerAmmo;
+    int startPizzaAmmo;
+
+
     float volume = 0.5f;
 
     bool proceedButton = false;
@@ -398,6 +406,12 @@ public class GameManager : MonoBehaviour
                     gameState = GameState.GetOrder;
                     SetTarget(pizzaPlace.transform.position);
                     Time.timeScale = 1f;
+                    startDayPosition = player.transform.position;
+                    startDayRotation = player.transform.rotation;
+                    startPlayerRb = player.GetComponent<Rigidbody>();
+                    startPlayerHealth = player.GetHealth();
+                    startPlayerAmmo = player.GetAmmo();
+                    startPizzaAmmo = ammo;
                 }
 
                 break;
@@ -486,7 +500,7 @@ public class GameManager : MonoBehaviour
             upgradedNavMesh.SetActive(true);
         }
 
-        money -= 50;
+        money -= 30;
         OpenShopMenu();
     }
 
@@ -512,10 +526,10 @@ public class GameManager : MonoBehaviour
     private void OpenShopMenu() {
         summaryUI.SetActive(true);
 
-        advertisingButton.interactable = money >= 50;
-        carButton.interactable = money >= 50;
-        gunButton.interactable = money >= 50;
-        pizzaButton.interactable = money >= 50;
+        advertisingButton.interactable = money >= 30;
+        carButton.interactable = money >= 30;
+        gunButton.interactable = money >= 30;
+        pizzaButton.interactable = money >= 30;
         healthButton.interactable = money >= 5 && player.GetHealth() != 100;
         ammoButton.interactable = money >= 5 && ammo != 150;
 
@@ -548,7 +562,37 @@ public class GameManager : MonoBehaviour
     }
 
     public void RestartDay() {
+        player.transform.position = startDayPosition;
+        player.transform.rotation = startDayRotation;
+        player.GetComponent<Rigidbody2D>().velocity = Vector3.zero;
+        ammo = startPizzaAmmo;
+        player.SetHealth(startPlayerHealth);
+        player.SetAmmo(startPlayerAmmo);
+        todayPizzaMoney = 0;
+        todayPizzas = 0;
+        todayZombies = 0;
+        todayZombiesMoney = 0;
+        daytime = daytimeLength;
+        gameState = GameState.GetOrder;
+        SetTarget(pizzaPlace.transform.position);
+        Time.timeScale = 1f;
 
+        healthActiveText.enabled = false;
+        ammoActiveText.enabled = false;
+        parlorAmmoText.enabled = false;
+        nightTimeFilter.enabled = false;
+
+        GameObject[] zombees = GameObject.FindGameObjectsWithTag("Zombie");
+
+        foreach(GameObject z in zombees) {
+            Destroy(z);
+        }
+
+        zombieCount = 0;
+
+        pauseUI.SetActive(false);
+        deathUI.SetActive(false);
+        pauseButton.SetActive(true);
     }
 
     public void ToMainMenu() {
@@ -560,6 +604,12 @@ public class GameManager : MonoBehaviour
         gameState = GameState.GetOrder;
         pauseButton.SetActive(true);
         startMenu.SetActive(false);
+        startDayPosition = player.transform.position;
+        startDayRotation = player.transform.rotation;
+        startPlayerRb = player.GetComponent<Rigidbody>();
+        startPlayerHealth = player.GetHealth();
+        startPlayerAmmo = player.GetAmmo();
+        startPizzaAmmo = ammo;
     }
 
     public void PlayerDeath() {
