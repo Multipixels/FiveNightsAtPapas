@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -47,6 +48,9 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI healthText;
     public TextMeshProUGUI ammoText;
 
+    public TextMeshProUGUI healthActiveText;
+    public TextMeshProUGUI ammoActiveText;
+    public TextMeshProUGUI parlorAmmoText;
 
     public GameObject summaryUI;
     public Button advertisingButton;
@@ -189,6 +193,16 @@ public class GameManager : MonoBehaviour
 
             case GameState.Night:
 
+                SetTarget(pizzaPlace.transform.position);
+                HideTarget();
+
+                healthActiveText.enabled = true;
+                healthActiveText.text = $"Health: {player.GetHealth()}/100";
+                ammoActiveText.enabled = true;
+
+                if(!gunUpgrade) ammoActiveText.text = $"Ammo: {player.GetAmmo()}/6";
+                else ammoActiveText.text = $"Ammo: {player.GetAmmo()}/18";
+
                 if (nighttime <= 0f) {
                     gameState = GameState.NightGetBack;
                 }
@@ -198,9 +212,36 @@ public class GameManager : MonoBehaviour
                     SummonZombie();
                 }
 
+                if (nearTarget) {
+                    parlorAmmoText.enabled = true;
+                    parlorAmmoText.text = $"Ammo Storage: {ammo}";
+
+                    if ((ammo != 6 && !gunUpgrade) || (ammo != 18)) {
+                        ShowText("Press 'E' to refill ammo.");
+                    }
+                } else {
+                    parlorAmmoText.enabled = false;
+                    HideText();
+                }
+
+                if (playerInteraction && nearTarget) {
+                   
+                    if (gunUpgrade) {
+                        ammo -= (18 - player.GetAmmo());
+                        player.Refill(18);
+                    } else {
+                        ammo -= (6 - player.GetAmmo());
+                        player.Refill(6);
+                    }
+                }
+
                 break;
 
             case GameState.NightGetBack:
+
+                healthActiveText.text = $"Health: {player.GetHealth()}/100";
+                if (!gunUpgrade) ammoActiveText.text = $"Ammo: {player.GetAmmo()}/6";
+                else ammoActiveText.text = $"Ammo: {player.GetAmmo()}/18";
 
                 if (zombieCount == 0 && nearTarget) {
                     ShowText("Press 'E' to go to sleep.");
@@ -209,16 +250,39 @@ public class GameManager : MonoBehaviour
                     SetTarget(pizzaPlace.transform.position);
                 }
 
-                if (playerInteraction && nearTarget) {
+                if (nearTarget) {
+                    parlorAmmoText.enabled = true;
+                    parlorAmmoText.text = $"Ammo Storage: {ammo}";
+                } else {
+                    parlorAmmoText.enabled = false;
+                }
+
+                if (playerInteraction && nearTarget && zombieCount == 0) {
                     HideText();
                     nightTimeFilter.enabled = false;
                     player.CanShoot(false);
                     gameState = GameState.Summary;
                     Time.timeScale = 0f;
 
+                    healthActiveText.enabled = false;
+                    ammoActiveText.enabled = false;
+                    parlorAmmoText.enabled = false;
+
                     money += todayPizzaMoney;
                     money += todayZombiesMoney;
                     OpenShopMenu();
+                } else if (playerInteraction && nearTarget) {
+                    if ((ammo != 6 && !gunUpgrade) || (ammo != 18)) {
+                        ShowText("Press 'E' to refill ammo.");
+                    }
+
+                    if (gunUpgrade) {
+                        ammo -= (18 - player.GetAmmo());
+                        player.Refill(18);
+                    } else {
+                        ammo -= (6 - player.GetAmmo());
+                        player.Refill(6);
+                    }
                 }
 
                 break;
@@ -234,7 +298,9 @@ public class GameManager : MonoBehaviour
                     todayZombiesMoney = 0;
                     daytime = daytimeLength;
                     dayNumber += 1;
+                    zombieSpawnInterval -= 0.2f;
                     gameState = GameState.GetOrder;
+                    SetTarget(pizzaPlace.transform.position);
                     Time.timeScale = 1f;
                 }
 
@@ -284,9 +350,10 @@ public class GameManager : MonoBehaviour
             screenPos = camera.WorldToScreenPoint(zombieLocation);
         }
         
-
         GameObject z = Instantiate(zombie);
-        z.GetComponent<Zombie>().Init(player.transform, this, dayNumber);
+
+        if(gunUpgrade) z.GetComponent<Zombie>().Init(player.transform, this, (dayNumber-1)/2);
+        else z.GetComponent<Zombie>().Init(player.transform, this, dayNumber);
         z.transform.position = zombieLocation;
         zombieCount += 1;
     }
@@ -317,11 +384,13 @@ public class GameManager : MonoBehaviour
     public void BuyHealth() {
         player.Heal();
         money -= 2;
+        OpenShopMenu();
     }
 
     public void BuyAmmo() {
         ammo = 100;
         money -= 2;
+        OpenShopMenu();
     }
 
     public void NewDay() {

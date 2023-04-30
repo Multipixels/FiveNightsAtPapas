@@ -57,12 +57,13 @@ public class PlayerController : MonoBehaviour
     }
 
     private void Update() {
-        if (isShooting && shootingCooldown <= 0f) {
+        if (isShooting && shootingCooldown <= 0f && ammo > 0) {
             GameObject bObj = Instantiate(bullet);
             Vector2 worldPosition = Camera.main.ScreenToWorldPoint((Vector3)Mouse.current.position.ReadValue()) - transform.position;
             bObj.transform.position = transform.position;
             bObj.GetComponent<Bullet>().Init(worldPosition.normalized);
             shootingCooldown = shootingInterval;
+            ammo--;
         }
     }
 
@@ -86,6 +87,10 @@ public class PlayerController : MonoBehaviour
 
     public int GetHealth() {
         return health;
+    }
+
+    public int GetAmmo() {
+        return ammo;
     }
 
     public void Heal() {

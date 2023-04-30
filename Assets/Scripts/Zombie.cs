@@ -10,7 +10,8 @@ public class Zombie : MonoBehaviour
     public Transform player;
 
     private State state;
-    private int health = 2;
+    private int health = 1;
+    private int day = 1;
 
     [SerializeField]
     GameManager gm;
@@ -24,6 +25,8 @@ public class Zombie : MonoBehaviour
         player = playerTarget;
         this.gm = gm;
         state = State.Active;
+        health = 1 + day;
+        agent.speed = 3.0f + day * 0.5f;
     }
 
     void Start() {
