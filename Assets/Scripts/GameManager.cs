@@ -110,12 +110,12 @@ public class GameManager : MonoBehaviour
 
     bool playerInteraction;
 
-    float daytimeLength = 10f;
+    float daytimeLength = 60f;
     float daytime;
     float nighttimeLength = 60f;
     float nighttime;
 
-    float zombieSpawnInterval = 3f;
+    float zombieSpawnInterval = 4f;
     float zombieSpawnTimer;
 
     int zombieCount = 0;
